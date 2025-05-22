@@ -1,0 +1,268 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MOOC sur Moodle : Individu et Communauté, conçu pour les Classes Préparatoires par El Filali Mohamed.">
+    <title>MOOC : Individu et Communauté - El Filali Mohamed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1e40af;
+            --secondary: #f0f9ff;
+            --highlight: #facc15;
+            --text: #1e293b;
+            --text-light: #4b5563;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--secondary);
+            color: var(--text);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+        .navbar {
+            transition: all 0.3s ease;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: var(--highlight);
+            color: var(--text);
+        }
+        .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        .dropdown-menu {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(-10px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .dropdown:hover ..dropdown-menu {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--secondary);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--secondary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.6s ease-out;
+        }
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #scrollToTop {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        #scrollToTop:hover {
+            background-color: var(--primary-hover);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar fixed top-0 left-0 w-full bg-white shadow-lg z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="flex items-center">
+                <img src="fse_logo.png" alt="Logo de la Faculté des Sciences de l'Éducation" class="h-10 mr-3" onerror="this.src='https://placehold.co/40x40/2563eb/ffffff?text=FSE';">
+                <span class="text-xl font-semibold text-blue-700">MOOC I&C</span>
+            </a>
+            <button id="mobile-menu-btn" class="sm:hidden p-2 text-gray-600 hover:text-blue-600 focus:outline-none" aria-label="Ouvrir le menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <ul id="nav-menu" class="hidden sm:flex space-x-4 items-center">
+                <li><a href="index.html" class="nav-link active px-3 py-2 rounded-md">Accueil</a></li>
+                <li><a href="resume.html" class="nav-link px-3 py-2 rounded-md">Résumé</a></li>
+                <li><a href="introduction.html" class="nav-link px-3 py-2 rounded-md">Introduction</a></li>
+                <li><a href="analyse.html" class="nav-link px-3 py-2 rounded-md">Analyse</a></li>
+                <li class="relative dropdown">
+                    <a href="realisation.html" class="nav-link px-3 py-2 rounded-md flex items-center">Réalisation <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></a>
+                    <ul class="dropdown-menu absolute bg-white shadow-lg rounded-md mt-2 w-48">
+                        <li><a href="etape1.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 1: Choix du thème</a></li>
+                        <li><a href="etape2.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 2: Compétences</a></li>
+                        <li><a href="etape3.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 3: Test Prérequis</a></li>
+                        <li><a href="etape4.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 4: Axe I</a></li>
+                        <li><a href="etape5.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 5: Axe II</a></li>
+                        <li><a href="etape6.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 6: Évaluation</a></li>
+                        <li><a href="etape7.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 7: Prolongement</a></li>
+                        <li><a href="etape8.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 8: Certificat</a></li>
+                    </ul>
+                </li>
+                <li><a href="conclusion.html" class="nav-link px-3 py-2 rounded-md">Conclusion</a></li>
+                <li><a href="https://educma.com" target="_blank" class="nav-link bg-yellow-300 text-gray-800 px-3 py-2 rounded-md hover:bg-yellow-400">Accéder au MOOC</a></li>
+            </ul>
+        </div>
+        <ul id="mobile-menu" class="hidden sm:hidden bg-white shadow-lg">
+            <li><a href="index.html" class="nav-link active block px-4 py-3">Accueil</a></li>
+            <li><a href="resume.html" class="nav-link block px-4 py-3">Résumé</a></li>
+            <li><a href="introduction.html" class="nav-link block px-4 py-3">Introduction</a></li>
+            <li><a href="analyse.html" class="nav-link block px-4 py-3">Analyse</a></li>
+            <li>
+                <a href="realisation.html" class="nav-link block px-4 py-3">Réalisation</a>
+                <ul class="pl-4">
+                    <li><a href="etape1.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 1: Choix du thème</a></li>
+                    <li><a href="etape2.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 2: Compétences</a></li>
+                    <li><a href="etape3.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 3: Test Prérequis</a></li>
+                    <li><a href="etape4.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 4: Axe I</a></li>
+                    <li><a href="etape5.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 5: Axe II</a></li>
+                    <li><a href="etape6.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 6: Évaluation</a></li>
+                    <li><a href="etape7.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 7: Prolongement</a></li>
+                    <li><a href="etape8.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-300">Étape 8: Certificat</a></li>
+                </ul>
+            </li>
+            <li><a href="conclusion.html" class="nav-link block px-4 py-3">Conclusion</a></li>
+            <li><a href="https://educma.com" target="_blank" class="nav-link block px-4 py-3 bg-yellow-300 text-gray-800 hover:bg-yellow-400">Accéder au MOOC</a></li>
+        </ul>
+    </nav>
+
+    <main class="container mx-auto px-4 py-20">
+        <section class="min-h-screen flex flex-col justify-center items-center text-center bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-xl shadow-2xl p-6">
+            <img src="fse_logo.png" alt="Logo de la Faculté des Sciences de l'Éducation" class="w-32 h-32 mb-6 rounded-full shadow-xl border-4 border-blue-300" loading="lazy" onerror="this.src='https://placehold.co/128x128/ffffff/2563eb?text=FSE';">
+            <h1 class="text-3xl sm:text-5xl font-bold mb-4 tracking-tight">Création d’un MOOC sur Moodle</h1>
+            <p class="text-xl font-semibold text-blue-200 mb-2">Thème</p>
+            <h2 class="text-4xl sm:text-6xl font-extrabold mb-4">Individu et Communauté</h2>
+            <p class="text-lg sm:text-xl font-medium text-blue-100 mb-8">Classes Préparatoires aux Grandes Écoles</p>
+            <div class="bg-white bg-opacity-20 backdrop-blur-lg p-6 rounded-lg shadow-xl text-base sm:text-lg space-y-3 max-w-xl w-full border border-blue-400/30">
+                <p><strong class="font-semibold text-blue-100">Master :</strong> Ingénierie Technopédagogique et Innovation</p>
+                <p><strong class="font-semibold text-blue-100">Module :</strong> Conception de Dispositif de Formation à Distance</p>
+                <hr class="my-3 border-blue-300/50">
+                <p><strong class="font-semibold text-blue-100">Travail réalisé par :</strong> El Filali Mohamed</p>
+                <p><strong class="font-semibold text-blue-100">Encadré par :</strong> Pr. Maria EL QABLI</p>
+                <hr class="my-3 border-blue-300/50">
+                <p><strong class="font-semibold text-blue-100">Année :</strong> 2025-2026</p>
+            </div>
+            <a href="resume.html" class="mt-8 inline-block bg-yellow-300 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-yellow-400 transition">Découvrir le Projet</a>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8 text-center">
+        <p class="text-sm">© 2025 El Filali Mohamed - Projet MOOC Individu et Communauté</p>
+    </footer>
+
+    <button id="scrollToTop" title="Retour en haut" aria-label="Retour en haut de la page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    </button>
+
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const scrollToTop = document.getElementById('scrollToTop');
+        const loader = document.getElementById('loader');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            mobileMenuBtn.querySelector('svg').classList.toggle('rotate-180');
+        });
+
+        window.addEventListener('scroll', () => {
+            scrollToTop.style.display = window.scrollY > 200 ? 'flex' : 'none';
+        });
+        scrollToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        window.addEventListener('load', () => {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 600);
+        });
+
+        navLinks.forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
